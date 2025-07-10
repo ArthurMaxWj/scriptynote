@@ -19,24 +19,50 @@ class ScriptynoteTranspiler
     result = ""
 
     text.each_char do |char|
-      if char == "\n" && !@ss.endl?
-        result += "</br>"
-      elsif SIMPLE_MD.has_value?(char) # simpel markers
-        result += tag(char_to_tag(char), !@ss.switch_get(SIMPLE_MD.key(char)))
-      elsif char == "\n" && @ss.endl? # endline used by marker
-        if @ss.endl_marker == :header
-          result += "</h1>"
-          @ss.on(:header)
-        end
-      elsif char == "#" && !@ss.on?(:header)
-        @ss.on(:header)
-        result += "<h1>"
+      if @ss.special?
+        result += handle_special(char)
       else
-        result += char
+        result += handle_normal(char)
       end
     end
 
     result
+  end
+
+  def handle_special(char)
+    if char != "#" && @ss.inside_special?(:header) # resolve header
+      @ss.stop_special(:header)
+      num = @ss.markerdata_header_grade
+
+      "<h#{num}>#{char}"
+    elsif char == "#" && @ss.inside_special?(:header) # upgrade header
+      @ss.marker_header(:upgrade)
+      ""
+    else
+      raise "no more known specials left"
+    end
+  end
+
+  def handle_normal(char)
+    if char == "\n" && !@ss.endl?
+      "<br>"
+    elsif SIMPLE_MD.has_value?(char) # simple markers
+      tag(char_to_tag(char), !@ss.switch_get(SIMPLE_MD.key(char)))
+    elsif char == "\n" && @ss.endl? # if endline used by marker
+      if @ss.endl_marker == :header
+        num = @ss.markerdata_header_grade
+        @ss.marker_header(:off)
+
+        "</h#{num}>"
+      else
+        ""
+      end
+    elsif char == "#"
+      @ss.marker_header(:on)
+      ""
+    else # not a marker-special character
+      char
+    end
   end
 
   private
