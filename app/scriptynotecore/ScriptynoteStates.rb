@@ -8,7 +8,7 @@ class ScriptynoteStates
     @is_endl_used = false
     @endl_marker = nil
 
-    @m_d_grade = 1
+    @marker_data = {}
   end
 
   def on?(name)
@@ -37,22 +37,20 @@ class ScriptynoteStates
   def endl? = @is_endl_used
   def endl_marker = @endl_marker
 
-
-  def markerdata_header_grade = @m_d_grade
-
   def marker_header(action)
     case action
     when :on
       @is_endl_used = true
       @endl_marker = :header
+      write(:header, :level, 1)
       start_special(:header)
     when :off
       @is_endl_used = false
       @endl_marker = nil
-      @m_d_grade = 1
       stop_special(:header)
     when :upgrade
-      @m_d_grade += 1 unless @m_d_grade == 6
+      lev = read(:header, :level)
+      write(:header, :level, lev + 1) unless lev == 6
     else
       raise "unknown : #{action}"
     end
@@ -67,36 +65,22 @@ class ScriptynoteStates
   end
 
   def special?
-  @specials.values.any?
+    @specials.values.any?
   end
 
   def inside_special?(name)
-        @specials[name]
+    @specials[name]
   end
 
+  def read(marker_name, key)
+    data = @marker_data.dig(marker_name, key)
+    raise "unknown marker/key: #{marker_name}/#{key}" if data.nil?
 
-  private
-
-  def marker(name)
-    raise "No such state: #{name}" unless MARKERS.include?(name)
-
-    name
+    data
   end
 
-  def handle_complex(name, val)
-    raise "Not a complex marker: #{name}" unless MARKERS_COMPLEX.include?(name)
-
-    case name
-    when :header
-      if val
-        @is_endl_used = true
-        @endl_marker = :header
-      else
-        @is_endl_used = false
-        @endl_marker = nil
-      end
-    else
-      raise "Complex marker not yet supported: #{name}"
-    end
+  def write(marker_name, key, val)
+    @marker_data[:header] ||= {}
+    @marker_data[marker_name][key] = val
   end
 end

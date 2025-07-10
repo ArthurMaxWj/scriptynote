@@ -32,7 +32,7 @@ class ScriptynoteTranspiler
   def handle_special(char)
     if char != "#" && @ss.inside_special?(:header) # resolve header
       @ss.stop_special(:header)
-      num = @ss.markerdata_header_grade
+      num = @ss.read(:header, :level)
 
       "<h#{num}>#{char}"
     elsif char == "#" && @ss.inside_special?(:header) # upgrade header
@@ -50,7 +50,7 @@ class ScriptynoteTranspiler
       tag(char_to_tag(char), !@ss.switch_get(SIMPLE_MD.key(char)))
     elsif char == "\n" && @ss.endl? # if endline used by marker
       if @ss.endl_marker == :header
-        num = @ss.markerdata_header_grade
+        num = @ss.read(:header, :level)
         @ss.marker_header(:off)
 
         "</h#{num}>"
