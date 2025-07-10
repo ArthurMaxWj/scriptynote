@@ -1,3 +1,7 @@
-<%= link_to "Back to Home", home_path %>
+<form action="/home" method="get">
+  <input type="hidden" name="markdown" value="<%= @markdown %>">
+  <button type="submit">Back to editing</button>
+</form>
 <br />
 <%= @result.html_safe %>
+
