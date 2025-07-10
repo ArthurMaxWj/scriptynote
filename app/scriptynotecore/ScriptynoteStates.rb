@@ -1,6 +1,8 @@
 class ScriptynoteStates
   MARKERS = %i[bold italic underline header]
   MARKERS_COMPLEX = %i[header]
+  MARKERS_SIMPLE = %i[bold italic underline]
+
 
   def initialize
     @states = MARKERS.index_with(false)
@@ -21,29 +23,18 @@ class ScriptynoteStates
     @states[name.to_sym] = val
   end
 
-  def on(name) = set(name, true)
-  def off(name) = set(name, false)
-
-  def switch(name)
-    set(name, !on?(name))
-  end
-
-  def switch_get(name)
-    switch(name)
-
-    !on?(name)
-  end
-
   def endl? = @is_endl_used
   def endl_marker = @endl_marker
 
   def marker_header(action)
     case action
-    when :on
+    when :on_and_start_special
       @is_endl_used = true
       @endl_marker = :header
       write(:header, :level, 1)
       start_special(:header)
+    when :stop_special
+      stop_special(:header)
     when :off
       @is_endl_used = false
       @endl_marker = nil
@@ -52,16 +43,23 @@ class ScriptynoteStates
       lev = read(:header, :level)
       write(:header, :level, lev + 1) unless lev == 6
     else
-      raise "unknown : #{action}"
+      raise "unknown action for marker 'header': #{action}"
     end
   end
 
-  def start_special(name)
-    @specials[name] = true
-  end
+  def simple_marker(name, action)
+    raise "unknown simpel marker: #{name}" unless MARKERS_SIMPLE.include?(name)
 
-  def stop_special(name)
-    @specials[name] = false
+    case action
+    when :on
+      on(name)
+    when :off
+      off(name)
+    when :swap
+      on?(name) ? off(name) : on(name)
+    else
+      raise "unknown action for marker '#{name}': #{action}"
+    end
   end
 
   def special?
@@ -82,5 +80,19 @@ class ScriptynoteStates
   def write(marker_name, key, val)
     @marker_data[:header] ||= {}
     @marker_data[marker_name][key] = val
+  end
+
+  private
+
+  def on(name) = set(name, true)
+  def off(name) = set(name, false)
+
+
+  def start_special(name)
+    @specials[name] = true
+  end
+
+  def stop_special(name)
+    @specials[name] = false
   end
 end
