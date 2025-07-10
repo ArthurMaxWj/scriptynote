@@ -26,6 +26,55 @@ class ScriptynoteStates
   def endl? = @is_endl_used
   def endl_marker = @endl_marker
 
+  def special?
+    @specials.values.any?
+  end
+
+  def inside_special?(name)
+    @specials[name]
+  end
+
+  def read(marker_name, key)
+    data = @marker_data.dig(marker_name, key)
+    raise "Unknown marker/key: #{marker_name}/#{key}" if data.nil?
+
+    data
+  end
+
+  def write(marker_name, key, val)
+    @marker_data[marker_name] ||= {}
+    @marker_data[marker_name][key] = val
+  end
+
+  def marker(name, action)
+    raise "Unknown marker: #{name}" unless MARKERS.include?(name)
+
+    if MARKERS_COMPLEX.include?(name)
+      if name == :header
+        marker_header(action)
+      else
+        raise "Unimmplemented complex marker: #{name}"
+      end
+    elsif MARKERS_SIMPLE.include?(name)
+      simple_marker(name, action)
+    else
+      raise "Neither complex nor simple marker: #{name}"
+    end
+  end
+
+  private
+
+  def on(name) = set(name, true)
+  def off(name) = set(name, false)
+
+  def start_special(name)
+    @specials[name] = true
+  end
+
+  def stop_special(name)
+    @specials[name] = false
+  end
+
   def marker_header(action)
     case action
     when :on_and_start_special
@@ -43,12 +92,12 @@ class ScriptynoteStates
       lev = read(:header, :level)
       write(:header, :level, lev + 1) unless lev == 6
     else
-      raise "unknown action for marker 'header': #{action}"
+      raise "Unknown action for marker 'header': #{action}"
     end
   end
 
   def simple_marker(name, action)
-    raise "unknown simpel marker: #{name}" unless MARKERS_SIMPLE.include?(name)
+    raise "Unknown simple marker: #{name}" unless MARKERS_SIMPLE.include?(name)
 
     case action
     when :on
@@ -60,39 +109,5 @@ class ScriptynoteStates
     else
       raise "unknown action for marker '#{name}': #{action}"
     end
-  end
-
-  def special?
-    @specials.values.any?
-  end
-
-  def inside_special?(name)
-    @specials[name]
-  end
-
-  def read(marker_name, key)
-    data = @marker_data.dig(marker_name, key)
-    raise "unknown marker/key: #{marker_name}/#{key}" if data.nil?
-
-    data
-  end
-
-  def write(marker_name, key, val)
-    @marker_data[:header] ||= {}
-    @marker_data[marker_name][key] = val
-  end
-
-  private
-
-  def on(name) = set(name, true)
-  def off(name) = set(name, false)
-
-
-  def start_special(name)
-    @specials[name] = true
-  end
-
-  def stop_special(name)
-    @specials[name] = false
   end
 end

@@ -31,15 +31,15 @@ class ScriptynoteTranspiler
 
   def handle_special(char)
     if char != "#" && @ss.inside_special?(:header) # resolve header
-      @ss.marker_header(:stop_special)
+      @ss.marker(:header, :stop_special)
       num = @ss.read(:header, :level)
 
       "<h#{num}>#{char}"
     elsif char == "#" && @ss.inside_special?(:header) # upgrade header
-      @ss.marker_header(:upgrade)
+      @ss.marker(:header, :upgrade)
       ""
     else
-      raise "no more known specials left"
+      raise "No more known specials left"
     end
   end
 
@@ -48,20 +48,20 @@ class ScriptynoteTranspiler
       "<br>"
     elsif SIMPLE_MD.has_value?(char) # simple markers
       mark = SIMPLE_MD.key(char)
-      @ss.simple_marker(mark, :swap)
+      @ss.marker(mark, :swap)
 
       tag(char_to_tag(char), @ss.on?(mark))
     elsif char == "\n" && @ss.endl? # if endline used by marker
       if @ss.endl_marker == :header
         num = @ss.read(:header, :level)
-        @ss.marker_header(:off)
+        @ss.marker(:header, :off)
 
         "</h#{num}>"
       else
         ""
       end
     elsif char == "#"
-      @ss.marker_header(:on_and_start_special)
+      @ss.marker(:header, :on_and_start_special)
       ""
     else # not a marker-special character
       char
@@ -80,7 +80,7 @@ class ScriptynoteTranspiler
 
   def char_to_tag(char)
     name = SIMPLE_MD.key(char)
-    raise "no tag for: #{char}" unless TAG_LIST.has_key?(name)
+    raise "No tag for: #{char}" unless TAG_LIST.has_key?(name)
 
     TAG_LIST[name]
   end
